@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mapa de Escuelas - Catamarca</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; }
+        #filtros {
+            padding: 10px;
+            background: #f0f0f0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #map { height: 90vh; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="filtros">
+        <input type="text" id="buscador" placeholder="Buscar escuela o director/a..." style="flex: 1;" />
+        
+        <select id="filtroNivel">
+            <option value="">Todos los niveles</option>
+            {% for nivel in niveles %}
+                <option value="{{ nivel }}">{{ nivel }}</option>
+            {% endfor %}
+        </select>
+
+        <select id="filtroLocalidad">
+            <option value="">Todas las localidades</option>
+            {% for localidad in localidades %}
+                <option value="{{ localidad }}">{{ localidad }}</option>
+            {% endfor %}
+        </select>
+
+        <button id="btnReset">Mostrar todas</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([-28.4, -65.8], 7);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const marcadores = [];
+
+        {% for escuela in escuelas %}
+            // Crear marcador directamente sin declarar variable
+            marcadores.push(
+                L.marker([
+                    parseFloat("{{ escuela.latitud|floatformat:6 }}".replace(',', '.')),
+                    parseFloat("{{ escuela.longitud|floatformat:6 }}".replace(',', '.'))
+                ]).bindPopup(
+                    `<strong>{{ escuela.nombre }}</strong><br>
+                     {{ escuela.domicilio }}<br>
+                     {{ escuela.localidad }} - {{ escuela.departamento }}<br>
+                     Nivel: {{ escuela.nivel }}<br>
+                     Director/a: {{ escuela.director }}`
+                ).addTo(map)
+            );
+            
+            // Agregar metadata al último marcador añadido
+            marcadores[marcadores.length - 1].meta = {
+                nombre: "{{ escuela.nombre|lower }}",
+                director: "{{ escuela.director|lower }}",
+                nivel: "{{ escuela.nivel }}",
+                localidad: "{{ escuela.localidad }}"
+            };
+        {% endfor %}
+
+        function filtrar() {
+            const texto = document.getElementById("buscador").value.toLowerCase();
+            const nivel = document.getElementById("filtroNivel").value;
+            const localidad = document.getElementById("filtroLocalidad").value;
+
+            marcadores.forEach(m => {
+                const coincideTexto = m.meta.nombre.includes(texto) || m.meta.director.includes(texto);
+                const coincideNivel = !nivel || m.meta.nivel === nivel;
+                const coincideLocalidad = !localidad || m.meta.localidad === localidad;
+
+                if (coincideTexto && coincideNivel && coincideLocalidad) {
+                    m.addTo(map);
+                } else {
+                    map.removeLayer(m);
+                }
+            });
+        }
+
+        function resetFiltros() {
+            document.getElementById("buscador").value = '';
+            document.getElementById("filtroNivel").value = '';
+            document.getElementById("filtroLocalidad").value = '';
+            filtrar();
+        }
+
+        // Listeners
+        document.getElementById("buscador").addEventListener("input", filtrar);
+        document.getElementById("filtroNivel").addEventListener("change", filtrar);
+        document.getElementById("filtroLocalidad").addEventListener("change", filtrar);
+        document.getElementById("btnReset").addEventListener("click", resetFiltros);
+    </script>
+</body>
+</html>
