@@ -1,12 +1,33 @@
 import pandas as pd
 from escuelas.models import Escuela
 
+
 def convertir_float(valor):
+    """
+    Convierte un valor a float, manejando comas como separadores decimales.
+
+    Si el valor es una cadena, reemplaza la coma por un punto antes de
+    convertirlo a float.
+
+    Args:
+        valor: El valor a convertir, puede ser una cadena o un número.
+
+    Returns:
+        El valor convertido a float.
+    """
     if isinstance(valor, str):
         return float(valor.replace(',', '.'))
     return valor
 
+
 def run():
+    """
+    Carga los datos de las escuelas desde un archivo Excel a la base de datos.
+
+    Lee el archivo 'Mapaeducativo.xlsx', itera sobre sus filas y crea un
+    objeto Escuela por cada una, guardándolo en la base de datos.
+    Imprime un mensaje de error si alguna fila no puede ser procesada.
+    """
     df = pd.read_excel('Mapaeducativo.xlsx', engine='openpyxl')
 
     for _, row in df.iterrows():
